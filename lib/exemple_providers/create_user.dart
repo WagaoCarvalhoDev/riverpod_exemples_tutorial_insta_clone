@@ -98,9 +98,12 @@ class MyHomePage extends StatelessWidget {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[],
+          children: const <Widget>[],
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+          child: const Icon(Icons.add),
+          onPressed: () => createOrUpdatePersonDialog(context)),
     );
   }
 }
@@ -108,8 +111,7 @@ class MyHomePage extends StatelessWidget {
 final nameController = TextEditingController();
 final ageController = TextEditingController();
 
-/*Future<Person?> createOrUpdatePersonDialog(
-  BuildContext context, [
+Future<Person?> createOrUpdatePersonDialog(BuildContext context, [
   Person? existingPerson,
 ]) {
   String? name = existingPerson?.name;
@@ -117,4 +119,51 @@ final ageController = TextEditingController();
 
   nameController.text = name ?? '';
   ageController.text = age?.toString() ?? '';
-}*/
+
+  return showDialog<Person?>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text('Create a person'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration:
+              const InputDecoration(labelText: 'Enter name here...'),
+              onChanged: (value) => name = value,
+            ),
+            TextField(
+              controller: ageController,
+              decoration: const InputDecoration(labelText: 'Enter age here...'),
+              onChanged: (value) => age = int.tryParse(value),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (name != null && age != null) {
+                if (existingPerson != null) {
+                  final newPerson = existingPerson.updated(
+                    name,
+                    age,
+                  );
+                  Navigator.of(context).pop(newPerson);
+                } else {}
+              } else {
+                Navigator.of(context).pop();
+              }
+            },
+            child: const Text('Create'),
+          ),
+        ],
+      );
+    },
+  );
+}
