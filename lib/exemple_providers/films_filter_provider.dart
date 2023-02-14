@@ -61,6 +61,27 @@ class Film {
       );
 }
 
+const allFilms = [
+  Film(
+    id: '1',
+    title: 'The Shark',
+    description: 'description shark',
+    isFavorite: false,
+  ),
+  Film(
+    id: '2',
+    title: 'The dog',
+    description: 'description dog',
+    isFavorite: false,
+  ),
+  Film(
+    id: '3',
+    title: 'The Bird',
+    description: 'description bird',
+    isFavorite: false,
+  ),
+];
+
 class MyHomePage extends StatelessWidget {
   const MyHomePage({super.key});
 

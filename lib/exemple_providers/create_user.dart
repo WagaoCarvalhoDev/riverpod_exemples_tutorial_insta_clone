@@ -73,7 +73,6 @@ class DataModel extends ChangeNotifier {
 
   void update(Person updatedPerson) {
     final index = _people.indexOf(updatedPerson);
-    print('xxxxxxxxxxx $index');
     final oldPerson = _people[index];
     if (oldPerson.name != updatedPerson.name ||
         oldPerson.age != updatedPerson.age) {
