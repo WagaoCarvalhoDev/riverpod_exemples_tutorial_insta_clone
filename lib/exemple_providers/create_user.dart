@@ -34,12 +34,11 @@ class Person {
     String? uuid,
   }) : uuid = uuid ?? const Uuid().v4();
 
-  Person updated([String? name, int? age]) {
-    return Person(
-      name: name ?? this.name,
-      age: age ?? this.age,
-    );
-  }
+  Person updated([String? name, int? age]) => Person(
+        name: name ?? this.name,
+        age: age ?? this.age,
+        uuid: uuid,
+      );
 
   String get displayName => '$name ($age years old)';
 
@@ -53,6 +52,8 @@ class Person {
   String toString() => 'Person(name: $name, age: $age, uuid: $uuid)';
 }
 
+final peopleProvider = ChangeNotifierProvider((_) => DataModel());
+
 class DataModel extends ChangeNotifier {
   final List<Person> _people = [];
 
@@ -60,7 +61,7 @@ class DataModel extends ChangeNotifier {
 
   UnmodifiableListView<Person> get people => UnmodifiableListView(_people);
 
-  void addPerson(Person person) {
+  void add(Person person) {
     _people.add(person);
     notifyListeners();
   }
@@ -70,40 +71,66 @@ class DataModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void update(Person updatePerson) {
-    final index = _people.indexOf(updatePerson);
+  void update(Person updatedPerson) {
+    final index = _people.indexOf(updatedPerson);
+    print('xxxxxxxxxxx $index');
     final oldPerson = _people[index];
-    if (oldPerson.name != updatePerson.name ||
-        oldPerson.age != updatePerson.age) {
+    if (oldPerson.name != updatedPerson.name ||
+        oldPerson.age != updatedPerson.age) {
       _people[index] = oldPerson.updated(
-        updatePerson.name,
-        updatePerson.age,
+        updatedPerson.name,
+        updatedPerson.age,
       );
       notifyListeners();
     }
   }
 }
 
-final peopleProvider = ChangeNotifierProvider((_) => DataModel());
-
-class MyHomePage extends StatelessWidget {
+class MyHomePage extends ConsumerWidget {
   const MyHomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('widget.title'),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const <Widget>[],
-        ),
+      body: Consumer(
+        builder: (context, ref, child) {
+          final dataModel = ref.watch(peopleProvider);
+          return ListView.builder(
+            itemCount: dataModel.count,
+            itemBuilder: (context, index) {
+              final person = dataModel.people[index];
+              return ListTile(
+                title: GestureDetector(
+                    onTap: () async {
+                      final updatedPerson = await createOrUpdatePersonDialog(
+                        context,
+                        person,
+                      );
+                      if (updatedPerson != null) {
+                        dataModel.update(updatedPerson);
+                      }
+                    },
+                    child: Text(person.displayName)),
+              );
+            },
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
-          child: const Icon(Icons.add),
-          onPressed: () => createOrUpdatePersonDialog(context)),
+        child: const Icon(Icons.add),
+        onPressed: () async {
+          final person = await createOrUpdatePersonDialog(
+            context,
+          );
+          if (person != null) {
+            final dataModel = ref.read(peopleProvider);
+            dataModel.add(person);
+          }
+        },
+      ),
     );
   }
 }
@@ -111,7 +138,8 @@ class MyHomePage extends StatelessWidget {
 final nameController = TextEditingController();
 final ageController = TextEditingController();
 
-Future<Person?> createOrUpdatePersonDialog(BuildContext context, [
+Future<Person?> createOrUpdatePersonDialog(
+  BuildContext context, [
   Person? existingPerson,
 ]) {
   String? name = existingPerson?.name;
@@ -131,7 +159,7 @@ Future<Person?> createOrUpdatePersonDialog(BuildContext context, [
             TextField(
               controller: nameController,
               decoration:
-              const InputDecoration(labelText: 'Enter name here...'),
+                  const InputDecoration(labelText: 'Enter name here...'),
               onChanged: (value) => name = value,
             ),
             TextField(
@@ -154,8 +182,17 @@ Future<Person?> createOrUpdatePersonDialog(BuildContext context, [
                     name,
                     age,
                   );
-                  Navigator.of(context).pop(newPerson);
-                } else {}
+                  Navigator.of(context).pop(
+                    newPerson,
+                  );
+                } else {
+                  Navigator.of(context).pop(
+                    Person(
+                      name: name!,
+                      age: age!,
+                    ),
+                  );
+                }
               } else {
                 Navigator.of(context).pop();
               }
