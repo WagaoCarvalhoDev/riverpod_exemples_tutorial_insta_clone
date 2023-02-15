@@ -53,12 +53,7 @@ class Film {
       id == other.id && isFavorite == other.isFavorite;
 
   @override
-  int get hashCode => Object.hashAll(
-        [
-          id,
-          isFavorite,
-        ],
-      );
+  int get hashCode => Object.hashAll([id, isFavorite]);
 }
 
 const allFilms = [
@@ -82,11 +77,44 @@ const allFilms = [
   ),
 ];
 
-class MyHomePage extends StatelessWidget {
+class FilmsNotifier extends StateNotifier<List<Film>> {
+  FilmsNotifier() : super(allFilms);
+
+  void update(Film film, bool isFavorite) {
+    state = state
+        .map((thisFilm) => thisFilm.id == film.id
+            ? thisFilm.copy(isFavorite: isFavorite)
+            : thisFilm)
+        .toList();
+  }
+}
+
+enum FavoriteStatus {
+  all,
+  favorite,
+  notFavorite,
+}
+
+final favoriteStatusProvider = StateProvider<FavoriteStatus>(
+  (_) => FavoriteStatus.all,
+);
+
+final allFilmsProvider = StateNotifierProvider<FilmsNotifier, List<Film>>(
+  (_) => FilmsNotifier(),
+);
+
+final favoriteFilmsProvider = Provider<Iterable<Film>>(
+  (ref) => ref.watch(allFilmsProvider).where((film) => film.isFavorite),
+);
+final notFavoriteFilmsProvider = Provider<Iterable<Film>>(
+  (ref) => ref.watch(allFilmsProvider).where((film) => !film.isFavorite),
+);
+
+class MyHomePage extends ConsumerWidget {
   const MyHomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('widget.title'),
