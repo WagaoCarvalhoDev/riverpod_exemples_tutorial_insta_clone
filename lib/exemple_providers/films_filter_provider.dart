@@ -106,6 +106,7 @@ final allFilmsProvider = StateNotifierProvider<FilmsNotifier, List<Film>>(
 final favoriteFilmsProvider = Provider<Iterable<Film>>(
   (ref) => ref.watch(allFilmsProvider).where((film) => film.isFavorite),
 );
+
 final notFavoriteFilmsProvider = Provider<Iterable<Film>>(
   (ref) => ref.watch(allFilmsProvider).where((film) => !film.isFavorite),
 );
@@ -117,14 +118,92 @@ class MyHomePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('widget.title'),
+        title: const Text('Films'),
+        centerTitle: true,
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[],
-        ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: <Widget>[
+          const Center(child: FilterWidget()),
+          Consumer(
+            builder: (context, ref, child) {
+              final filter = ref.watch(favoriteStatusProvider);
+              switch (filter) {
+                case FavoriteStatus.all:
+                  return FilmsWidget(provider: allFilmsProvider);
+                case FavoriteStatus.favorite:
+                  return FilmsWidget(provider: favoriteFilmsProvider);
+                case FavoriteStatus.notFavorite:
+                  return FilmsWidget(provider: notFavoriteFilmsProvider);
+              }
+            },
+          ),
+        ],
       ),
+    );
+  }
+}
+
+class FilmsWidget extends ConsumerWidget {
+  const FilmsWidget({required this.provider, super.key});
+
+  final AlwaysAliveProviderBase<Iterable<Film>> provider;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final films = ref.watch(provider);
+    return Expanded(
+      child: ListView.builder(
+        itemCount: films.length,
+        itemBuilder: (context, index) {
+          final film = films.elementAt(index);
+          final favoriteIcon = film.isFavorite
+              ? const Icon(Icons.favorite)
+              : const Icon(Icons.favorite_border);
+          return ListTile(
+            title: Text(film.title),
+            subtitle: Text(film.description),
+            trailing: IconButton(
+              icon: favoriteIcon,
+              onPressed: () {
+                final isFavorite = !film.isFavorite;
+                ref.read(allFilmsProvider.notifier).update(
+                      film,
+                      isFavorite,
+                    );
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class FilterWidget extends StatelessWidget {
+  const FilterWidget({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, child) {
+        return DropdownButton(
+          value: ref.watch(favoriteStatusProvider),
+          items: FavoriteStatus.values
+              .map(
+                (fs) => DropdownMenuItem(
+                  value: fs,
+                  child: Text(
+                    fs.toString().split('.').last,
+                  ),
+                ),
+              )
+              .toList(),
+          onChanged: (fs) {
+            ref.read(favoriteStatusProvider.notifier).state = fs!;
+          },
+        );
+      },
     );
   }
 }
